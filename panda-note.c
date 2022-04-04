@@ -9,7 +9,7 @@
 static void die(char *, ...);
 static void print_notes(char *);
 static void write_note(char *, char*);
-//static char *format_note(char *);
+static char *format_note(char *, int);
 static void usage(void);
 
 static void die(char *message, ...) {
@@ -24,9 +24,7 @@ static void print_notes(char *datafile){
     char *notes = (char *) malloc(1023);
     FILE *file = fopen(datafile, "r");
     fread(notes, 1, 1023, file);
-    printf("===[start of %s dump]===\n", datafile);
     printf("%s", notes);
-    printf("===[end   of %s dump]===\n", datafile);
     fclose(file);
     exit(0);
 }
@@ -42,11 +40,19 @@ static void write_note(char *notes, char *datafile){
     printf("Note saved.\n");
 }
 
-/* char *format_note(char *note) {
-    char *buffer = (char *) ec_malloc(230);
-    strcpy(buffer, sprintf("from %s:\n%s\n", getenv("USERPROFILE"), note));
+static char *format_note(char *note, int uid) {
+    char *buffer = (char *) malloc(230);
+    // time
+    char *time_buffer = (char *) malloc(100);
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(time_buffer, 100, "%D %T", timeinfo);
+    // time
+    sprintf(buffer, "#%d %s %s\n", uid, time_buffer, note);
     return buffer;
-} */
+}
 
 static void usage(void) {
 	die("Usage: panda-note <data to add to %s> <options>\n"
@@ -55,7 +61,7 @@ static void usage(void) {
 }
 
 int main(int argc, char **argv) {
-	int userid = geteuid();
+	unsigned int userid = getuid();
 	char *notes = (char *) malloc(200);
 
 	if (argc < 2)
@@ -70,7 +76,7 @@ int main(int argc, char **argv) {
             exit(0);
         }
     }
-    write_note(notes, datafile);
+    write_note(format_note(notes, userid), datafile);
     printf("Have a good day!\n");
 	free(notes);
 }
