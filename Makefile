@@ -16,11 +16,11 @@ options:
 	@echo "CC = ${CC}"
 
 install: all
-	cp panda-note ${PREFIX}/bin
+	mv panda-note ${PREFIX}/bin
 	chmod 755 ${PREFIX}/bin/panda-note
 	chmod u+s ${PREFIX}/bin/panda-note 
 
 clean:
-	rm panda-note
+	rm -f panda-note ${PREFIX}/bin/panda-note
 
 .PHONY: options panda-note install clean

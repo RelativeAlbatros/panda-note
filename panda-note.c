@@ -2,72 +2,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <time.h>
-#include "hacking.h"
+#include <stdarg.h>
+#include "config.h"
 
-void usage() {
-	printf("Usage: panda-note <data to add to /tmp/notes> <datafile> <options>\n"
-            "\t-h: prints this helpful message\n");
-	exit(1);
-}
-void fatal(char *);
-void *ec_malloc(unsigned int);
-char *input_note();
-void read_notes(char *);
-//char *format_note(char *);
+static void die(char *, ...);
+static void print_notes(char *);
+static void write_note(char *, char*);
+//static char *format_note(char *);
+static void usage(void);
 
-int main(int argc, char **argv) {
-	int userid, fd;
-	char *buffer = (char *) ec_malloc(200);
-	char *datafile = (char *) ec_malloc(20);
-
-	if (argc < 2){
-        strcpy(buffer, input_note());
-	} else {
-        strcpy(buffer, argv[1]);
-    }
-	if (argc > 2)
-		strcpy(datafile, argv[2]);
-	else
-		strcpy(datafile, "/var/notes.txt");
-    for(int i=1; i<argc; i++){
-        if(strcmp(argv[i], "-h") == 0){
-            usage();
-        } else if(strcmp(argv[i], "-r") == 0){
-            read_notes(datafile);
-        }
-    }
-
-    if (buffer[strlen(buffer)-1] != '\n')
-        strcat(buffer, "\n");
-    FILE *file = fopen(datafile, "a");
-	if (file == NULL)
-        fatal("in main() while opening file");
-	fwrite(buffer, sizeof(char), strlen(buffer), file);
-    fclose(file);
-	printf("Note has been saved.\n");
-	free(datafile);
-	free(buffer);
+static void die(char *message, ...) {
+    va_list ap;
+    va_start(ap, message);
+    vfprintf(stderr, message, ap);
+    va_end(ap);
+    exit(1);
 }
 
-char *input_note(){
-    char *buffer = (char *) ec_malloc(200);
-    printf("Input Note: ");
-    fgets(buffer, 199, stdin);
-    return buffer;
-}
-
-void read_notes(char *datafile){
-    char *buffer = (char *) ec_malloc(1023);
+static void print_notes(char *datafile){
+    char *notes = (char *) malloc(1023);
     FILE *file = fopen(datafile, "r");
-    fread(buffer, 1, 1023, file);
-    printf("=== start of %s dump ===\n", datafile);
-    printf("%s", buffer);
-    printf("=== end   of %s dump ===\n", datafile);
+    fread(notes, 1, 1023, file);
+    printf("===[start of %s dump]===\n", datafile);
+    printf("%s", notes);
+    printf("===[end   of %s dump]===\n", datafile);
     fclose(file);
     exit(0);
+}
+
+static void write_note(char *notes, char *datafile){
+    if (notes[strlen(notes)-1] != '\n')
+        strcat(notes, "\n");
+    FILE *file = fopen(datafile, "a");
+	if (file == NULL)
+        die("panda-note: opening %s", datafile);
+	fwrite(notes, sizeof(char), strlen(notes), file);
+    fclose(file);
+    printf("Note saved.\n");
 }
 
 /* char *format_note(char *note) {
@@ -75,3 +47,30 @@ void read_notes(char *datafile){
     strcpy(buffer, sprintf("from %s:\n%s\n", getenv("USERPROFILE"), note));
     return buffer;
 } */
+
+static void usage(void) {
+	die("Usage: panda-note <data to add to %s> <options>\n"
+        "   -h: prints this helpful message\n"
+        "   -r: prints contents of %s\n", datafile, datafile);
+}
+
+int main(int argc, char **argv) {
+	int userid = geteuid();
+	char *notes = (char *) malloc(200);
+
+	if (argc < 2)
+        usage();
+	else
+        strcpy(notes, argv[1]);
+    for(int i=1; i<argc; i++){
+        if(strcmp(argv[i], "-h") == 0){
+            usage();
+        } else if(strcmp(argv[i], "-r") == 0){
+            print_notes(datafile);
+            exit(0);
+        }
+    }
+    write_note(notes, datafile);
+    printf("Have a good day!\n");
+	free(notes);
+}
