@@ -1,4 +1,4 @@
-CC  = gcc
+CC  = tcc
 SRC = panda-note.c
 OBJ = ${SRC:.c=.o}
 PREFIX = /usr/local

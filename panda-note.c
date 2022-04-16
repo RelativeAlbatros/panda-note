@@ -8,7 +8,8 @@
 
 static void die(char *, ...);
 static void print_notes(char *);
-static void write_note(char *, char*);
+static void write_file(char *, char*);
+static void remove_file(char*);
 static char *format_note(char *, int);
 static void usage(void);
 
@@ -24,20 +25,34 @@ static void print_notes(char *datafile){
     char *notes = (char *) malloc(1023);
     FILE *file = fopen(datafile, "r");
     fread(notes, 1, 1023, file);
+    if(strcmp(notes, "\0") == 0 ) { // check if file is empty
+        printf("File is empty.\n");
+        exit(0);
+    }
+    printf(" UID    Date     Time     Note\n");
     printf("%s", notes);
     fclose(file);
     exit(0);
 }
 
-static void write_note(char *notes, char *datafile){
+static void write_file(char *notes, char *datafile){
     if (notes[strlen(notes)-1] != '\n')
         strcat(notes, "\n");
     FILE *file = fopen(datafile, "a");
 	if (file == NULL)
-        die("panda-note: opening %s", datafile);
+        die("panda-note: opening %s\n", datafile);
 	fwrite(notes, sizeof(char), strlen(notes), file);
     fclose(file);
     printf("Note saved.\n");
+}
+
+static void remove_file(char *datafile) {
+    if (remove(datafile) != 0) {
+        die("in main: deleting file\n");
+    } else {
+        printf("successfully deleted file.\n");
+    }
+    exit(0);
 }
 
 static char *format_note(char *note, int uid) {
@@ -49,15 +64,16 @@ static char *format_note(char *note, int uid) {
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     strftime(time_buffer, 100, "%D %T", timeinfo);
-    // time
-    sprintf(buffer, "#%d %s %s\n", uid, time_buffer, note);
+    sprintf(buffer, "|%4d|%8s|%s|\n", uid, time_buffer, note);
     return buffer;
 }
 
 static void usage(void) {
 	die("Usage: panda-note <data to add to %s> <options>\n"
         "   -h: prints this helpful message\n"
-        "   -r: prints contents of %s\n", datafile, datafile);
+        "   -c: flushes %s\n"
+        "   -r: prints contents of %s\n",
+        datafile, datafile, datafile);
 }
 
 int main(int argc, char **argv) {
@@ -74,9 +90,11 @@ int main(int argc, char **argv) {
         } else if(strcmp(argv[i], "-r") == 0){
             print_notes(datafile);
             exit(0);
+        } else if(strcmp(argv[i], "-c") == 0){
+            remove_file(datafile);
         }
     }
-    write_note(format_note(notes, userid), datafile);
+    write_file(format_note(notes, userid), datafile);
     printf("Have a good day!\n");
 	free(notes);
 }
