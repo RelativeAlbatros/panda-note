@@ -6,6 +6,8 @@
 #include <stdarg.h>
 #include "config.h"
 
+static char *datafile = "/var/notes";
+
 static void die(char *, ...);
 static void print_notes(char *);
 static void write_file(char *, char*);
